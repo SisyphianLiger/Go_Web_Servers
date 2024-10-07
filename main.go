@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"sync/atomic"
@@ -18,7 +17,8 @@ func main ()  {
     // Important FilePaths/Addresses
     const filepathRoot = "."  
     const port = "8080"
-
+    const apiPath = "/api"
+    const adminPath = "/admin"
     // Config
     cfg := apiConfig{
         fileserverHits: atomic.Int32{},
@@ -27,9 +27,9 @@ func main ()  {
     // Server and Handlers
     server:= http.NewServeMux()
     server.Handle("/app/", cfg.middlewareMetrics(http.StripPrefix("/app/", http.FileServer(http.Dir(filepathRoot)))))
-    server.HandleFunc("/healthz", healthCheck)
-    server.HandleFunc("/metrics", cfg.serverHits)
-    server.HandleFunc("/reset", cfg.serverReset)
+    server.HandleFunc("GET "+ apiPath + "/healthz", healthCheck)
+    server.HandleFunc("GET " + adminPath + "/metrics", cfg.serverHits)
+    server.HandleFunc("POST " + adminPath + "/reset", cfg.serverReset)
 
     // Server Info
     localSever := http.Server{
@@ -43,20 +43,3 @@ func main ()  {
 
 }
 
-func (cfg * apiConfig) middlewareMetrics(next http.Handler) http.Handler {
-    hitCounter := func (w http.ResponseWriter, r *http.Request){
-        cfg.fileserverHits.Add(1)
-        next.ServeHTTP(w, r)
-    }
-    return http.HandlerFunc(hitCounter)
-}
-
-func (cfg * apiConfig) serverHits(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-        w.WriteHeader(http.StatusOK) 
-        res, err := w.Write([]byte(fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())))
-        if err != nil {
-        log.Printf("Body not properly created: %d err: %v", res, err)
-            return
-        }
-}
