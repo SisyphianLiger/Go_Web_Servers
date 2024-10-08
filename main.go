@@ -28,6 +28,7 @@ func main ()  {
     server:= http.NewServeMux()
     server.Handle("/app/", cfg.middlewareMetrics(http.StripPrefix("/app/", http.FileServer(http.Dir(filepathRoot)))))
     server.HandleFunc("GET "+ apiPath + "/healthz", healthCheck)
+    server.HandleFunc("POST "+ apiPath + "/validate_chirp", validateChirp)
     server.HandleFunc("GET " + adminPath + "/metrics", cfg.serverHits)
     server.HandleFunc("POST " + adminPath + "/reset", cfg.serverReset)
 
