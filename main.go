@@ -1,63 +1,60 @@
 package main
 
 import (
-	"database/sql"
-	"log"
-	"net/http"
-	"os"
-	"sync/atomic"
-
 	"github.com/SisyphianLiger/Go_Web_Servers/internal/database"
 	_ "github.com/lib/pq"
+	"log"
+	"net/http"
+	"sync/atomic"
 )
 
 // apiConfig Struct
 type apiConfig struct {
-    fileserverHits atomic.Int32
-    databaseConnection *database.Queries
+	fileserverHits     atomic.Int32
+	dbc *database.Queries
+	dev string
 }
 
 
+func main() {
+	// Important FilePaths/Addresses
+	const filepathRoot = "."
+	const port = "8080"
+	const apiPath = "/api"
+	const adminPath = "/admin"
 
-func main ()  {
-    // Important FilePaths/Addresses
-    const filepathRoot = "."  
-    const port = "8080"
-    const apiPath = "/api"
-    const adminPath = "/admin"
+	openEnv()
+	dbURL := environmentVarExists("DB_URL")
+	devEnv := environmentVarExists("PLATFORM")
 
-    // DB File
-    dbURL := os.Getenv("DB_URL")
-    db, err := sql.Open("postgres", dbURL)
-    if err != nil {
-        log.Printf("Unable to Open DB, check ports and connecion string")
-        return
-    }
-    dbQueries := database.New(db)
+	// Make DB Connection extracted
+	db := openDB("postgres", dbURL)
+	dbQueries := database.New(db)
 
-    // Config
-    cfg := apiConfig{
-        fileserverHits: atomic.Int32{},
-        databaseConnection: dbQueries,
-    }
-    
-    // Server and Handlers
-    server:= http.NewServeMux()
-    server.Handle("/app/", cfg.middlewareMetrics(http.StripPrefix("/app/", http.FileServer(http.Dir(filepathRoot)))))
-    server.HandleFunc("GET "+ apiPath + "/healthz", healthCheck)
-    server.HandleFunc("POST "+ apiPath + "/validate_chirp", validateChirp)
-    server.HandleFunc("GET " + adminPath + "/metrics", cfg.serverHits)
-    server.HandleFunc("POST " + adminPath + "/reset", cfg.serverReset)
+	// Config
+	cfg := apiConfig{
+		fileserverHits:     atomic.Int32{},
+		dbc: dbQueries,
+		dev: devEnv,
+	}
 
-    // Server Info
-    localSever := http.Server{
-        Handler: server,
-        Addr: ":" + port,
-    }
-    
-    log.Printf("Serving on port %s\n", port)
-    log.Fatal(localSever.ListenAndServe())
+	// Server and Handlers
+	server := http.NewServeMux()
+	server.Handle("/app/", cfg.middlewareMetrics(http.StripPrefix("/app/", http.FileServer(http.Dir(filepathRoot)))))
+	server.HandleFunc("GET "+apiPath+"/healthz", healthCheck)
+	server.HandleFunc("POST "+apiPath+"/validate_chirp", validateChirp)
+	// server.HandleFunc("POST "+apiPath+"/chirps", makeChirp)
+	server.HandleFunc("POST "+apiPath+"/users", cfg.addUser)
+	server.HandleFunc("POST "+adminPath+"/reset", cfg.resetUserTable)
+	server.HandleFunc("GET "+adminPath+"/metrics", cfg.serverHits)
+	// server.HandleFunc("POST "+adminPath+"/reset", cfg.serverReset)
 
+	// Server Info
+	localSever := http.Server{
+		Handler: server,
+		Addr:    ":" + port,
+	}
 
+	log.Printf("Serving on port %s\n", port)
+	log.Fatal(localSever.ListenAndServe())
 }
-

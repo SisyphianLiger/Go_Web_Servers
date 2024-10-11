@@ -3,7 +3,7 @@ package main
 import (
     "net/http"
     "log"
-	"encoding/json"
+    "encoding/json"
 )
 
 func respondWithError(w http.ResponseWriter, code int, msg string, err error) {
@@ -33,3 +33,4 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
     w.WriteHeader(code)
     w.Write(data)
 }
+
