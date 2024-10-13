@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"log"
 )
 
 func (cfg *apiConfig) addUser(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +29,7 @@ func (cfg *apiConfig) addUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
+	log.Printf("Request body right before sending: %+v", user.ID)
 
 	respondWithJson(w, http.StatusCreated, User {
 		ID: user.ID,
