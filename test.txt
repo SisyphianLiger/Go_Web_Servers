@@ -1,0 +1,8 @@
+curl -X POST http://localhost:8080/admin/reset
+curl -X POST http://localhost:8080/api/users \
+     -H "Content-Type: application/json" \
+     -d '{"email": "saul@bettercall.com"}'
+curl -X POST http://localhost:8080/api/chirps \
+     -H "Content-Type: application/json" \
+     -d "{\"body\": \"I'm gonna be a damn good developer, and people are gonna know about it.\", \"user_id\": \"\080cd48f-17ce-4407-9b57-002622ed2b14"}"
+curl -X GET http://yourserver/api/chirps/080cd48f-17ce-4407-9b57-002622ed2b14

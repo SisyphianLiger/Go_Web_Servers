@@ -42,6 +42,8 @@ func main() {
 	server := http.NewServeMux()
 	server.Handle("/app/", cfg.middlewareMetrics(http.StripPrefix("/app/", http.FileServer(http.Dir(filepathRoot)))))
 	server.HandleFunc("GET "+apiPath+"/healthz", healthCheck)
+	server.HandleFunc("GET "+apiPath+"/chirps", cfg.getChirps)
+	server.HandleFunc("GET "+apiPath+"/chirps/{chirpID}", cfg.getAChirp)
 	server.HandleFunc("POST "+apiPath+"/chirps", cfg.makeChirp)
 	server.HandleFunc("POST "+apiPath+"/users", cfg.addUser)
 	server.HandleFunc("POST "+adminPath+"/reset", cfg.resetUserTable)
