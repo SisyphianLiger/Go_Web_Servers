@@ -5,8 +5,10 @@ import (
 	"net/http"
 )
 
+// UPGRADE 
 func (cfg *apiConfig) addUser(w http.ResponseWriter, r *http.Request) {
 	type params struct {
+		Password string `json:"password"`
 		Email string `json:"email"`
 	}
 
