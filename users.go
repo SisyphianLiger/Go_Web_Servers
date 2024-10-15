@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"github.com/SisyphianLiger/Go_Web_Servers/internal/auth"
+	"github.com/SisyphianLiger/Go_Web_Servers/internal/database"
 )
 
-// UPGRADE 
+// UPGRADE
 func (cfg *apiConfig) addUser(w http.ResponseWriter, r *http.Request) {
 	type params struct {
 		Password string `json:"password"`
@@ -22,19 +24,24 @@ func (cfg *apiConfig) addUser(w http.ResponseWriter, r *http.Request) {
 			"Incorrect Json Key at Body", err)
 		return
 	}
-	
-	user, err := cfg.dbc.CreateUser(r.Context(), p.Email)
+	// Here we need to add the password	
+	hashedPassword, err := auth.HashPassword(p.Password)	
 	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Password Hash did not work please check length", err)
+		return
+	}
+	user, uerr := cfg.dbc.CreateUser(r.Context(), database.CreateUserParams{Email: p.Email, HashedPassword: hashedPassword})
+	if uerr != nil {
 		respondWithError(w, http.StatusInternalServerError,
 			"User with that email already exits", err)
 		return
 	}
 
-
-	respondWithJson(w, http.StatusCreated, User {
+	respondWithJson(w, http.StatusCreated, User{
 		ID: user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email: user.Email,
 	})
+
 }

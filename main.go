@@ -46,6 +46,7 @@ func main() {
 	server.HandleFunc("GET "+apiPath+"/chirps/{chirpID}", cfg.getAChirp)
 	server.HandleFunc("POST "+apiPath+"/chirps", cfg.makeChirp)
 	server.HandleFunc("POST "+apiPath+"/users", cfg.addUser)
+	server.HandleFunc("POST "+apiPath+"/login", cfg.userLogin)
 	server.HandleFunc("POST "+adminPath+"/reset", cfg.resetUserTable)
 	server.HandleFunc("GET "+adminPath+"/metrics", cfg.serverHits)
 	// server.HandleFunc("POST "+adminPath+"/reset", cfg.serverReset)
