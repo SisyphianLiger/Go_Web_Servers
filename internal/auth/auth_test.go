@@ -2,6 +2,8 @@ package auth
 
 import (
 	"testing"
+	"time"
+	"github.com/google/uuid"
 )
 
 func CheckAndPassFunction(t *testing.T) {
@@ -22,5 +24,65 @@ func CheckThatIncorrectPasswordFails(t * testing.T) {
 	hp2, _ := HashPassword(badPassword)
 	if hp1 == hp2 {
 		t.Fatalf("Hashing Has failed, Password: %s and BadPassword: %s are the same", password, badPassword)
+	}
+}
+
+func TestJWTCreationAndValidation(t *testing.T) {
+	
+	// Test Data
+	userID := uuid.New()
+	secret := "test_secret"
+
+	token, err := MakeJWT(userID, secret, time.Hour)
+	if err != nil {
+		t.Fatalf("Unable to Make JWT")
+	}
+
+	vUser, vErr := ValidateJWT(token, secret)
+	if vErr != nil {
+		t.Fatalf("Validation Created error: %v", vErr)
+	}
+
+	if userID != vUser {
+		t.Errorf("Uuid for new user and Validated ID do not match")
+	}
+
+}
+
+func TestJWTDetectsExpiredToken(t *testing.T) {
+	
+	// Test Data
+	userID := uuid.New()
+	secret := "test_secret"
+
+	token, err := MakeJWT(userID, secret, time.Nanosecond)
+	if err != nil {
+		t.Fatalf("Unable to Make JWT")
+	}
+	time.Sleep(time.Millisecond)
+
+	_, vErr := ValidateJWT(token, secret)
+	if vErr == nil {
+		t.Fatalf("Problem: Token should be expired but is in use")
+	}
+
+}
+
+func TestJWTWrongSecret(t *testing.T) {
+	
+	// Test Data
+	userID := uuid.New()
+	secret := "test_secret"
+	wrongSecret := "borkingthecode"
+
+	token, err := MakeJWT(userID, secret, time.Nanosecond)
+	if err != nil {
+		t.Fatalf("Unable to Make JWT")
+	}
+	time.Sleep(time.Millisecond)
+
+	_, vErr := ValidateJWT(token, wrongSecret)
+	if vErr == nil {
+		t.Fatalf("Problem: Use of Wrong Secret did not cause errors")
 	}
 }
