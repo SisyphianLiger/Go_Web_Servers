@@ -1,10 +1,15 @@
 package auth
+
 import (
-	"golang.org/x/crypto/bcrypt"
-	"time"
-	"github.com/google/uuid"
-	"github.com/golang-jwt/jwt/v5"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func HashPassword(password string) (string, error) {
@@ -23,11 +28,11 @@ func CheckPasswordHash(password string, hash string) error {
 	return nil
 }
 
-func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
+func MakeJWT(userID uuid.UUID, tokenSecret string) (string, error) {
 	claims := jwt.RegisteredClaims{
 		Issuer: "chirpy",	
 		IssuedAt: jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresIn)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 		Subject: userID.String(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -66,4 +71,30 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	}
 	// Ignore return value just do ide doesn't error
 	return result, nil
+}
+
+
+func GetBearerToken(headers http.Header) (string, error) {
+	authHeader := headers.Get("Authorization")
+	if authHeader == "" {
+		return "", fmt.Errorf("Authorization Header Not Found")
+	}
+	
+	authSlice := strings.SplitN(authHeader, " ", 2)
+	if strings.ToLower(authSlice[0]) != "bearer" {
+		return "", fmt.Errorf("Header did not have Bearer Token but %s", authSlice[0])
+	}
+	return strings.TrimSpace(authSlice[1]), nil
+}
+
+
+func MakeRefreshToken() (string, error) {
+	b := make([]byte, 32)
+	_, hexError := rand.Read(b)
+	if hexError != nil {
+		return "", fmt.Errorf("Problem allocating 256-bit byte array to Random: %v", hexError)
+	}
+	result := hex.EncodeToString(b)
+	return result, nil
+
 }

@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"net/http"
 	"testing"
 	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -84,5 +86,23 @@ func TestJWTWrongSecret(t *testing.T) {
 	_, vErr := ValidateJWT(token, wrongSecret)
 	if vErr == nil {
 		t.Fatalf("Problem: Use of Wrong Secret did not cause errors")
+	}
+}
+
+func TestGetBearerTokenSuccess(t *testing.T) {
+	header := make(http.Header)	
+	header.Set("Authorization", "Bearer LIGHT_WEIGHT")
+	token, error := GetBearerToken(header)
+	if error != nil {
+		t.Errorf("Got %s instead of LIGHT_WEIGHT", token)
+	}
+}
+
+func TestNoAuthorizationHeader(t *testing.T) {
+	header := make(http.Header)	
+	header.Set("", "Bearer LIGHT_WEIGHT")
+	_, error := GetBearerToken(header)
+	if error == nil {
+		t.Fatalf("No Header Given but still successful, please check function specifcation")
 	}
 }

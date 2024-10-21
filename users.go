@@ -30,6 +30,8 @@ func (cfg *apiConfig) addUser(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "Password Hash did not work please check length", err)
 		return
 	}
+
+	// Here is where I think we need to add the Token
 	user, uerr := cfg.dbc.CreateUser(r.Context(), database.CreateUserParams{Email: p.Email, HashedPassword: hashedPassword})
 	if uerr != nil {
 		respondWithError(w, http.StatusInternalServerError,
@@ -37,11 +39,11 @@ func (cfg *apiConfig) addUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
 	respondWithJson(w, http.StatusCreated, User{
 		ID: user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email: user.Email,
 	})
-
 }

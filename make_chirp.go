@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
-        "time"
+	"time"
+	"github.com/SisyphianLiger/Go_Web_Servers/internal/auth"
 	"github.com/SisyphianLiger/Go_Web_Servers/internal/database"
 	"github.com/google/uuid"
 )
@@ -28,6 +30,7 @@ func (cfg * apiConfig) getAChirp(w http.ResponseWriter, r * http.Request) {
         respondWithError(w, http.StatusInternalServerError, "Invalid chirp ID", err)
         return
     }
+
     // NO ROWS IN RESULT SET MEANS WE NEED TO CHECK IF THERE ARE ROWS AFTER ADDING
     chirp, err := cfg.dbc.GetAChirp(r.Context(), chirpID) 
     if err != nil {
@@ -68,17 +71,27 @@ func (cfg * apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
     respondWithJson(w, http.StatusOK, onlyChirps)
 }
 
+type MakeChirpParams struct {
+    Body   string `json:"body"`
+    UserID uuid.UUID `json:"user_id"`
+}
 // Going to Redo this function with the types and stuff...
 func (cfg * apiConfig) makeChirp (w http.ResponseWriter, r *http.Request){
 
-    type parameters struct {
-        Body   string `json:"body"`
-        UserID uuid.UUID `json:"user_id"`
-    }
-    params := parameters{}
+    params := MakeChirpParams{}
     decoder := json.NewDecoder(r.Body)
     if err := decoder.Decode(&params); err != nil {
-        respondWithError(w, http.StatusBadRequest, "Incorrect Json Object", err)
+        respondWithError(w, http.StatusBadRequest, "Expecting a ID and Body got incorrect Object", err)
+        return
+    }
+
+    res,_ := auth.GetBearerToken(r.Header)
+    log.Printf("Ummm what is the token in the header %s", res)
+    // CHECK HERE
+    // Helper Function to clean Function
+    userID, verificationError := cfg.verifyJWT(r)
+    if verificationError != nil {
+        respondWithError(w, http.StatusUnauthorized, "JWT Token has expired:", verificationError)
         return
     }
 
@@ -88,7 +101,7 @@ func (cfg * apiConfig) makeChirp (w http.ResponseWriter, r *http.Request){
         return
     }
     
-    chirp, err := cfg.dbc.MakeChirp(r.Context(), database.MakeChirpParams{Body: cleanBody, UserID: params.UserID}); 
+    chirp, err := cfg.dbc.MakeChirp(r.Context(), database.MakeChirpParams{Body: cleanBody, UserID: userID}); 
     if err != nil {
         respondWithError(w, http.StatusBadRequest, err.Error(), err)
         return 
@@ -130,3 +143,18 @@ func cleanedBody(msg string) string {
     return strings.Join(body, " ")
 }
 
+
+func (cfg * apiConfig) verifyJWT(r *http.Request) (uuid.UUID, error) {
+
+    validToken, err := auth.GetBearerToken(r.Header)
+    if err != nil {
+        return uuid.Nil, err
+    }
+
+    id, invalidID := auth.ValidateJWT(validToken, cfg.jwtSecret)
+    if invalidID != nil {
+        return uuid.Nil,invalidID
+    }
+
+    return id, nil
+}
