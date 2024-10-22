@@ -14,6 +14,8 @@ type apiConfig struct {
 	dbc *database.Queries
 	dev string
 	jwtSecret string
+	polkaKey string
+
 }
 
 
@@ -28,6 +30,7 @@ func main() {
 	dbURL := environmentVarExists("DB_URL")
 	devEnv := environmentVarExists("PLATFORM")
 	jwtSecret := environmentVarExists("JWT_SECRET")
+	polkaKey := environmentVarExists("POLKA_KEY")
 
 	// Make DB Connection extracted
 	db := openDB("postgres", dbURL)
@@ -39,6 +42,7 @@ func main() {
 		dbc: dbQueries,
 		dev: devEnv,
 		jwtSecret: jwtSecret,
+		polkaKey: polkaKey,
 	}
 
 	// Server and Handlers
@@ -48,11 +52,13 @@ func main() {
 	server.HandleFunc("GET "+apiPath+"/chirps", cfg.getChirps)
 	server.HandleFunc("POST "+apiPath+"/chirps", cfg.makeChirp)
 	server.HandleFunc("GET "+apiPath+"/chirps/{chirpID}", cfg.getAChirp)
+	server.HandleFunc("DELETE "+apiPath+"/chirps/{chirpID}", cfg.deleteAChirp)
 	server.HandleFunc("POST "+apiPath+"/users", cfg.addUser)
 	server.HandleFunc("PUT "+apiPath+"/users", cfg.authorizeUser)
 	server.HandleFunc("POST "+apiPath+"/login", cfg.userLogin)
 	server.HandleFunc("POST "+apiPath+"/refresh", cfg.refreshToken)
 	server.HandleFunc("POST "+apiPath+"/revoke", cfg.revokeToken)
+	server.HandleFunc("POST "+apiPath+"/polka/webhooks", cfg.upgradeToRed)
 
 
 	server.HandleFunc("POST "+adminPath+"/reset", cfg.resetUserTable)

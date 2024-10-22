@@ -19,3 +19,9 @@ SET email = $1,
         hashed_password = $2
 where $3 = id
 RETURNING *;
+
+-- name: UpgradeUserToRed :one
+UPDATE users
+SET is_chirpy_red = TRUE
+WHERE $1 = id
+RETURNING *;

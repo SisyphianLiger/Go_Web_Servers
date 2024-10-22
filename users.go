@@ -45,5 +45,6 @@ func (cfg *apiConfig) addUser(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email: user.Email,
+		Is_Chirpy_Red: user.IsChirpyRed.Bool,
 	})
 }
